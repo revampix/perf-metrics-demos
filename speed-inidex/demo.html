@@ -1,0 +1,126 @@
+<html>
+    <body>
+        <style>
+            .box {
+                width: 100%;
+                height: 12%;
+                background: black;
+                font-size: 32;
+                color: #fff;
+                text-align: center;
+                vertical-align: middle;
+                border-bottom: 5px solid #fff;
+                display: none;
+            }
+
+            .container {
+                float: right;
+                width: 42%;
+                height: 600px;
+                margin: 1%;
+                padding: 1% 2%;
+                border: 5px solid orange;
+            }
+        </style>
+
+        <script>
+            var fibNumber = 38;
+
+            function fibonacci(num) {
+                if (num <= 1) return 1;
+
+                return fibonacci(num - 1) + fibonacci(num - 2);
+            }
+        </script>
+
+        <h1>Speed Index Demo:</h1>
+
+        <div class="container">
+            <h2>Good Speed Index</h2>
+            <div class="box fast-render">box 1</div>
+            <div class="box fast-render">box 2</div>
+            <div class="box fast-render">box 3</div>
+            <div class="box fast-render">box 4</div>
+            <div class="box fast-render">box 5</div>
+            <div class="box fast-render">box 6</div>
+        </div>
+
+        <div class="container">
+            <h2>Bad Speed Index</h2>
+            <div class="box slow-render">box 1</div>
+            <div class="box slow-render">box 2</div>
+            <div class="box slow-render">box 3</div>
+            <div class="box slow-render">box 4</div>
+            <div class="box slow-render">box 5</div>
+            <div class="box slow-render">box 6</div>
+        </div>
+        
+        <script>
+            var fastRenderBoxes = document.getElementsByClassName('fast-render');
+            var slowRenderBoxes = document.getElementsByClassName('slow-render');
+
+            var fastStep = 2;
+            var slowStep = 1;
+
+            function stopFibonacci() {
+                stopFlag = true;
+            }
+
+            // Keep the Page Busy
+            var stopFlag = false;
+
+            var counter = 0;
+
+            function sleep (time) {
+              return new Promise((resolve) => setTimeout(resolve, time));
+            }
+
+            var infFib = function() {
+                sleep(100).then(() => {
+                    if (stopFlag === true) {
+                        return true;
+                    }
+
+                    function fibonacci(num) {
+                        if (num <= 1) return 1;
+
+                        return fibonacci(num - 1) + fibonacci(num - 2);
+                    }
+
+                    var defaultFib = 36;
+
+                    fibonacci(defaultFib);
+
+                    var fastShown = 0;
+                    var slowShown = 0;
+
+                    for (var i = 0; i < fastRenderBoxes.length; i++) {
+                        if (fastShown < fastStep && fastRenderBoxes[i].style.display !== "block") {
+                            fastRenderBoxes[i].style.display = "block";
+                            fastShown++;
+                        }
+
+                        if (slowShown < slowStep && slowRenderBoxes[i].style.display !== "block") {
+                            slowRenderBoxes[i].style.display = "block";
+                            slowShown++;
+                        }
+                    }
+
+                    //fastRenderBoxes[counter].style.display = "block";
+                    //slowRenderBoxes[counter].style.display = "block";
+
+                    counter++;
+
+                    if  (counter === fastRenderBoxes.length) {
+                        stopFlag = true;
+                    }
+
+                    infFib();
+                });
+            }
+                
+            infFib();
+        </script>
+
+    </body>
+</html>

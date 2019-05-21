@@ -1,0 +1,294 @@
+<html>
+
+    <head>
+        <style>
+            @keyframes moveAcross {
+                from {transform: translatex(0);}
+                to {transform: translatex(-5000px);}
+            }
+
+            .page-free {
+                width: 50px;
+                height: 40px;
+                background: green;
+                position: absolute;
+                top: 0;
+                left: 100%;
+                animation: moveAcross 20s linear;
+            }
+
+            #animation-container {
+                background: red;
+                height: 40px;
+                width: 100%;
+                position: relative;
+                z-index: 1;
+            }
+        </style>
+
+        <script>
+            function stopFibonacci() {
+                stopFlag = true;
+            }
+
+            // Keep the Page Busy
+            var stopFlag = false;
+
+            function sleep (time) {
+              return new Promise((resolve) => setTimeout(resolve, time));
+            }
+
+            var infFib = function() {
+                sleep(100).then(() => {
+                    if (stopFlag === true) {
+                        return true;
+                    }
+
+                    function fibonacci(num) {
+                        if (num <= 1) return 1;
+
+                        return fibonacci(num - 1) + fibonacci(num - 2);
+                    }
+
+                    var defaultFib = document.getElementById('fibonacci-number').value;
+
+                    fibonacci(defaultFib);
+
+                    infFib();
+                });
+            }
+                
+            infFib();
+        </script>
+
+        <script>
+            var BoomrNow = (function() {
+                return Date.now || function() { return new Date().getTime(); };
+            }());
+
+            var startTime = BoomrNow();
+
+            var COLLECTION_INTERVAL = 100;
+
+            /**
+            * Monitors Page Busy if LongTasks isn't supported
+            */
+            var PageBusyMonitor = function(w, t) {
+                // register this type
+                // ### t.register("busy", COMPRESS_MODE_PERCENT);
+        
+                //
+                // Constants
+                //
+        
+                /**
+                    * How frequently to poll (ms).
+                    *
+                    * IE and Edge clamp polling to the nearest 16ms.  With 32ms, we
+                    * will see approximately 3 polls per 100ms.
+                    */
+                var POLLING_INTERVAL = 32;
+        
+                /**
+                    * How much deviation from the expected time to allow (ms)
+                    */
+                var ALLOWED_DEVIATION_MS = 4;
+        
+                /**
+                    * How often to report on Page Busy (ms)
+                    */
+                var REPORT_INTERVAL = 100;
+        
+                /**
+                    * How many polls there were per-report
+                    */
+                var POLLS_PER_REPORT =
+                    Math.floor(REPORT_INTERVAL / POLLING_INTERVAL);
+        
+                /**
+                    * How many missed polls should we go backwards? (10 seconds worth)
+                    */
+                var MAX_MISSED_REPORTS = 100;
+        
+                //
+                // Local Members
+                //
+        
+                // last time we ran
+                var last = BoomrNow();
+        
+                // total callbacks
+                var total = 0;
+        
+                // late callbacks
+                var late = 0;
+        
+                // overall total and late callbacks (reset on beacon)
+                var overallTotal = 0;
+                var overallLate = 0;
+        
+                // whether or not we're enabled
+                var enabled = true;
+        
+                // intervals
+                var pollInterval = false;
+                var reportInterval = false;
+        
+                /**
+                    * Polling interval
+                    */
+                function onPoll() {
+                    var now = BoomrNow();
+                    var delta = now - last;
+                    last = now;
+        
+                    // if we're more than 2x the polling interval
+                    // + deviation, we missed at least one period completely
+                    if (delta > ((POLLING_INTERVAL * 2) + ALLOWED_DEVIATION_MS)) {
+                        var missedPolls = Math.floor((delta - POLLING_INTERVAL) / POLLING_INTERVAL);
+        
+                        total += missedPolls;
+                        late += missedPolls;
+                        delta -= (missedPolls * POLLING_INTERVAL);
+                    }
+        
+                    // total intervals increased by one
+                    total++;
+        
+                    // late intervals increased by one if we're more than the interval + deviation
+                    if (delta > (POLLING_INTERVAL + ALLOWED_DEVIATION_MS)) {
+                        late++;
+                    }
+                }
+        
+                /**
+                * Each reporting interval, log page busy
+                */
+                function onReport() {
+                    var reportTime = Math.floor((BoomrNow() - startTime) / COLLECTION_INTERVAL);
+                    var curTime = reportTime;
+                    var missedReports = 0;
+        
+                    if (total === 0) {
+                        return;
+                    }
+        
+                    // if we had more polls than we expect in each
+                    // collection period (we allow one extra for wiggle room), we
+                    // must not have been able to report, so assume those periods were 100%
+                    while (total > (POLLS_PER_REPORT + 1) &&
+                            missedReports <= MAX_MISSED_REPORTS) {
+                        //console.log("busy", 100, --curTime);
+        
+                        // reset the period by one
+                        total -= POLLS_PER_REPORT;
+                        late   = Math.max(late - POLLS_PER_REPORT, 0);
+        
+                        // this was a busy period
+                        overallTotal += POLLS_PER_REPORT;
+                        overallLate += POLLS_PER_REPORT;
+        
+                        missedReports++;
+                    }
+        
+                    // update the total stats
+                    overallTotal += total;
+                    overallLate += late;
+        
+                    //console.log("busy", Math.round(late / total * 100), reportTime);
+                    var div = document.createElement("div");
+                    div.className = 'page-free';
+                    document.getElementById('animation-container').appendChild(div);
+
+                    // reset stats
+                    total = 0;
+                    late = 0;
+                }
+        
+                /**
+                    * Analyzes Page Busy
+                    */
+                function analyze(startTime) {
+                    // add data to beacon
+                    //impl.addToBeacon("c.b", externalMetrics.pageBusy());
+                }
+        
+                /**
+                    * Disables the monitor
+                    */
+                function stop() {
+                    enabled = false;
+        
+                    if (pollInterval) {
+                        clearInterval(pollInterval);
+                        pollInterval = false;
+                    }
+        
+                    if (reportInterval) {
+                        clearInterval(reportInterval);
+                        reportInterval = false;
+                    }
+                }
+        
+                /**
+                    * Resets on beacon
+                    */
+                function onBeacon() {
+                    overallTotal = 0;
+                    overallLate = 0;
+                }
+        
+                //
+                // External metrics
+                //
+        
+                /**
+                    * Total Page Busy time
+                    */
+                // externalMetrics.pageBusy = function() {
+                //     if (overallTotal === 0) {
+                //         return 0;
+                //     }
+        
+                //     return Math.round(overallLate / overallTotal * 100);
+                // };
+        
+                //
+                // Setup
+                //
+                pollInterval = setInterval(onPoll, POLLING_INTERVAL);
+                reportInterval = setInterval(onReport, REPORT_INTERVAL);
+        
+                // return {
+                //     analyze: analyze,
+                //     stop: stop,
+                //     onBeacon: onBeacon
+                // };
+            };
+
+            var t = 0;
+
+            var pageBusy = new PageBusyMonitor(window, t);
+
+            //pageBusy.analyze();
+        </script>
+    </head>
+
+    <body>
+        <h1>Page Busy/Main Thread Busy Demo:</h1>
+
+        <label>Fibonacci number:
+            <input id="fibonacci-number" type="text" value="37" />
+        </label>
+        <button onclick="stopFibonacci()" type="button">Stop</button>
+
+        <br />
+        <br />
+
+        <h2>Page Busy timeline:</h2>
+        <div id="animation-container">
+            
+        </div>
+    </body>
+
+</html>
