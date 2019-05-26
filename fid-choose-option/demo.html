@@ -198,6 +198,11 @@
                 width: 10px;
                 background: red;
             }
+
+            #fid-container {
+                width: 190px;
+                height: 30px;
+            }
         </style>
 
         <div id="page-busy-container">
@@ -206,6 +211,7 @@
             <div id="animation-container"></div>
         </div>
 
+        <div id="fid-container">First input delay: <span style="font-weight: bold;" id="result"></span></div>
 
         <div class="container">
             <div class="image-container">
@@ -236,11 +242,6 @@
                 <button class="main_btn_m hvr-underline-from-left_m">Add To Cart</button>
             </div>
         </div>
-
-        <br />
-        <br />
-
-        <div style="font-size: 28px;">First input delay: <span style="font-weight: bold;" id="result"></span></div>
 
         <script>
             var selectedPrice = 0.00;
