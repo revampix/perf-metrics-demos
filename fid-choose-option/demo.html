@@ -53,6 +53,7 @@
                 background: #aaa;
                 position: relative;
                 line-height: 40px;
+                font-size: 18px;
             }
 
             .size-control.chosen {
@@ -175,6 +176,16 @@
                 animation: moveAcross 5s linear;
             }
 
+            .rage-click {
+                width: 24px;
+                height: 24px;
+                background: url('./rage-icon.png');
+                position: absolute;
+                top: 0;
+                left: 100%;
+                animation: moveAcross 5s linear;
+            }
+
             #page-busy-container {
                 width: 190px;
             }
@@ -210,9 +221,16 @@
             }
         </style>
 
+        <p style="text-align: left;">In order to demonstrate slow input response we keep the main thread busy for 700 ms. We repeate this in cicle but we have a 70 ms break between every cicle.</p>
+
         <div id="page-busy-container">
-            Main thread business:<br />
-            free <div class="page-free-info"></div> | busy <div class="page-busy-info"></div>
+            Legend:<br />
+            <div class="page-free-info"></div> cpu free | <div class="page-busy-info"></div> cpu busy
+            <br />
+            <img height="20" width="20" src="./rage-icon.png" /> rage click
+            <br />
+            <br />
+            Page Busy Timeline:
             <div id="animation-container"></div>
         </div>
 
@@ -226,9 +244,9 @@
             <div class="controls-container">
                 Size: <span id="chooser-warning">Please choose</span>
                 <br />
-                <div onclick="selectSize(this, 22.99)" class="control size-control">M <span class="variant-price">22.99 $</span></div>
-                <div onclick="selectSize(this, 27.50)" class="control size-control">L <span class="variant-price">27.50 $</span></div>
-                <div onclick="selectSize(this, 34.50)" class="control size-control">XL <span class="variant-price">34.50 $</span></div>
+                <button onclick="selectSize(this, 22.99)" class="control size-control">M <span class="variant-price">22.99 $</span></button>
+                <button onclick="selectSize(this, 27.50)" class="control size-control">L <span class="variant-price">27.50 $</span></button>
+                <button onclick="selectSize(this, 34.50)" class="control size-control">XL <span class="variant-price">34.50 $</span></button>
             </div>
 
             <div class="controls-container">
@@ -248,9 +266,70 @@
             </div>
         </div>
 
+        <!-- Rage Clicks -->
+        <script>
+            // number of clicks in the same PIXEL_AREA area
+            var sameClicks = 0;
+
+            var lastTarget = null;
+
+            // number of pixels area for Rage Clicks
+		    var PIXEL_AREA = 10;
+
+            // number of clicks in the same area to trigger a Rage Click
+            var RAGE_CLICK_THRESHOLD = 3;
+
+            // last coordinates
+            var x = 0;
+            var y = 0;
+
+            function onClick(e) {
+                var newX = e.clientX;
+                var newY = e.clientY;
+
+                // calculate number of pixels moved
+                var pixels = Math.round(
+                    Math.sqrt(Math.pow(y - newY, 2) +
+                    Math.pow(x - newX, 2)));
+
+                // track Rage Clicks
+                if (lastTarget === e.target || pixels <= PIXEL_AREA) {
+                    sameClicks++;
+
+                    if ((sameClicks + 1) >= RAGE_CLICK_THRESHOLD) {
+
+
+                        var div = document.createElement("div");
+                        div.className = 'rage-click';
+                        document.getElementById('animation-container').appendChild(div);
+                    }
+                }
+                else {
+                    sameClicks = 0;
+                }
+
+                // track last click coordinates and element
+                x = newX;
+                y = newY;
+                lastTarget = e.target;
+            }
+
+            //
+            // Startup
+            //
+            opts = {
+                capture: false,
+                passive: true
+            };
+            
+            document.addEventListener('click', onClick, opts);
+        </script>
+        
         <script>
             var selectedPrice = 0.00;
             var selectedQty   = 1;
+            var busyTime      = 700;
+            var freeTime      = 70;
 
             function decreaseQty()
             {
@@ -325,10 +404,10 @@
             }
 
             var kill = function() {
-                sleep(70).then(() => {
+                sleep(freeTime).then(() => {
 
                     var start = +new Date;
-                    while (+new Date - start < 500){}
+                    while (+new Date - start < busyTime){}
 
                     kill();
                 });
